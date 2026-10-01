@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080a08">
+  <meta name="description" content="Consulta el último servicio y el próximo cambio de aceite de tu vehículo en Lubricentro PTJ.">
+  <title>Lubricentro PTJ | Tu próximo cambio, siempre claro</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23080a08'/%3E%3Cpath d='M32 9c8 12 17 22 17 34a17 17 0 1 1-34 0C15 31 24 21 32 9Z' fill='%231ff000'/%3E%3Cpath d='M24 44a8 8 0 0 0 8 8' fill='none' stroke='%23080a08' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { ink: '#080a08', panel: '#111511', line: '#293029', lime: '#1ff000', deep: '#0e7300', silver: '#b5b5b5' },
+      fontFamily: { display: ['Space Grotesk', 'sans-serif'], body: ['DM Sans', 'sans-serif'] }
+    } } };
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; }
+    .hero-photo { background-image: linear-gradient(90deg, rgba(8,10,8,.98) 0%, rgba(8,10,8,.9) 38%, rgba(8,10,8,.35) 72%, rgba(8,10,8,.18) 100%), url('assets/hero-garage.png'); background-size: cover; background-position: center right; }
+    @media (max-width: 767px) { .hero-photo { background-image: linear-gradient(180deg, rgba(8,10,8,.66) 0%, rgba(8,10,8,.93) 50%, #080a08 100%), url('assets/hero-garage.png'); background-position: 63% top; } }
+    :focus-visible { outline: 3px solid #1ff000; outline-offset: 3px; }
+  </style>
+  <script src="app.js" defer></script>
+</head>
+<body data-page="public" class="bg-ink text-white antialiased">
+  <a href="#contenido" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-4 focus:bg-lime focus:px-4 focus:py-2 focus:text-ink">Saltar al contenido</a>
+  <header class="absolute inset-x-0 top-0 z-20 border-b border-white/10">
+    <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-5 sm:px-8 lg:px-12">
+      <a href="index.html" class="flex items-center gap-3" aria-label="Lubricentro PTJ, inicio">
+        <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-lime/40 bg-lime/10 text-lime">
+          <svg aria-hidden="true" viewBox="0 0 40 40" class="h-7 w-7" fill="none"><path d="M20 4c5 8 11 15 11 22a11 11 0 0 1-22 0C9 19 15 12 20 4Z" stroke="currentColor" stroke-width="2.5"/><path d="M14 27a6 6 0 0 0 6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        </span>
+        <span class="font-display text-lg font-bold leading-none tracking-tight sm:text-xl">LUBRICENTRO<span class="block text-sm tracking-[.24em] text-lime">PTJ</span></span>
+      </a>
+      <nav aria-label="Navegación principal" class="hidden items-center gap-9 text-sm font-semibold text-white/75 md:flex">
+        <a href="#consulta" class="hover:text-lime">Consultar patente</a>
+        <a href="#servicios" class="hover:text-lime">Servicios</a>
+        <a href="#como-funciona" class="hover:text-lime">Cómo funciona</a>
+      </nav>
+      <a href="admin.html" class="rounded-full border border-white/25 px-4 py-2.5 text-sm font-semibold text-white transition hover:border-lime hover:text-lime sm:px-5">Acceso al panel</a>
+    </div>
+  </header>
+
+  <main id="contenido">
+    <section class="hero-photo relative flex min-h-[770px] items-center overflow-hidden pt-32 md:min-h-[735px]">
+      <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-ink"></div>
+      <div class="relative mx-auto w-full max-w-7xl px-5 pb-20 pt-20 sm:px-8 lg:px-12 lg:pb-28">
+        <div class="max-w-2xl">
+          <p class="mb-7 inline-flex items-center gap-3 text-xs font-bold uppercase tracking-[.26em] text-lime sm:text-sm"><span class="h-px w-8 bg-lime"></span> Tu auto, al día</p>
+          <h1 class="font-display text-5xl font-bold leading-[1.03] tracking-[-.055em] sm:text-6xl lg:text-[5.25rem]">El próximo cambio<br><span class="text-lime">está claro.</span></h1>
+          <p class="mt-6 max-w-xl text-lg leading-relaxed text-white/70">Consulta cuándo le toca el próximo servicio a tu vehículo. Solo necesitas su patente.</p>
+
+          <div id="consulta" class="mt-10 max-w-xl scroll-mt-24 rounded-2xl border border-white/15 bg-[#111511]/90 p-5 shadow-2xl shadow-black/40 backdrop-blur-md sm:p-6">
+            <form id="search-form" novalidate>
+              <label for="plate-search" class="mb-3 block font-display text-lg font-semibold">Busca tu vehículo</label>
+              <div class="flex flex-col gap-3 sm:flex-row">
+                <input id="plate-search" name="plate" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14" placeholder="Ej. PTJ123" aria-describedby="search-hint search-status" class="min-h-14 w-full flex-1 rounded-xl border border-white/20 bg-white px-4 font-display text-lg font-semibold uppercase tracking-wider text-ink placeholder:font-body placeholder:text-base placeholder:font-normal placeholder:normal-case placeholder:tracking-normal placeholder:text-zinc-500 focus:border-lime focus:outline-none focus:ring-2 focus:ring-lime/50">
+                <button id="search-button" type="submit" class="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-lime px-6 font-display font-bold text-ink transition hover:bg-[#63ff46] disabled:cursor-wait disabled:opacity-70">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.8" cy="10.8" r="7"/><path d="m16 16 5 5"/></svg>
+                  <span>Consultar</span>
+                </button>
+              </div>
+              <p id="search-hint" class="mt-3 text-sm text-white/55">Para probar la demo, usa la patente <button type="button" id="sample-plate" class="font-bold text-lime underline underline-offset-4">PTJ123</button>.</p>
+              <p id="search-status" role="status" aria-live="polite" class="mt-3 hidden text-sm"></p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="search-result" aria-live="polite" class="relative z-10 mx-auto -mt-16 hidden max-w-7xl px-5 sm:px-8 lg:px-12"></section>
+
+    <section class="border-b border-white/10 bg-ink py-7">
+      <div class="mx-auto grid max-w-7xl gap-5 px-5 text-sm text-white/65 sm:grid-cols-3 sm:px-8 lg:px-12">
+        <div class="flex items-center gap-3"><span class="text-lime">✦</span><span>Información clara del último servicio</span></div>
+        <div class="flex items-center gap-3"><span class="text-lime">✦</span><span>Próximo cambio por fecha y kilometraje</span></div>
+        <div class="flex items-center gap-3"><span class="text-lime">✦</span><span>Consulta rápida desde cualquier dispositivo</span></div>
+      </div>
+    </section>
+
+    <section id="servicios" class="scroll-mt-20 bg-[#f2f4ef] py-20 text-ink sm:py-28">
+      <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+        <div class="flex flex-col justify-between gap-8 md:flex-row md:items-end">
+          <div><p class="mb-4 text-xs font-bold uppercase tracking-[.25em] text-deep">Lo que hacemos</p><h2 class="max-w-xl font-display text-4xl font-bold leading-tight tracking-tight sm:text-5xl">Un servicio preciso.<br>Un historial que acompaña.</h2></div>
+          <p class="max-w-sm text-base leading-relaxed text-zinc-600">Cada visita deja un registro sencillo de consultar, para que sepas qué se hizo y cuándo volver.</p>
+        </div>
+        <div class="mt-12 grid gap-4 md:grid-cols-3">
+          <article class="rounded-2xl border border-zinc-200 bg-white p-7 shadow-sm"><span class="mb-9 flex h-12 w-12 items-center justify-center rounded-xl bg-lime/20 text-2xl text-deep" aria-hidden="true">01</span><h3 class="font-display text-xl font-bold">Cambio de aceite</h3><p class="mt-3 leading-relaxed text-zinc-600">Registramos el tipo de aceite y el kilometraje para calcular tu próximo cambio.</p></article>
+          <article class="rounded-2xl border border-zinc-200 bg-white p-7 shadow-sm"><span class="mb-9 flex h-12 w-12 items-center justify-center rounded-xl bg-lime/20 text-2xl text-deep" aria-hidden="true">02</span><h3 class="font-display text-xl font-bold">Control de filtros</h3><p class="mt-3 leading-relaxed text-zinc-600">Dejamos constancia del filtro de aceite y del filtro de aire en cada servicio.</p></article>
+          <article class="rounded-2xl border border-zinc-200 bg-white p-7 shadow-sm"><span class="mb-9 flex h-12 w-12 items-center justify-center rounded-xl bg-lime/20 text-2xl text-deep" aria-hidden="true">03</span><h3 class="font-display text-xl font-bold">Seguimiento simple</h3><p class="mt-3 leading-relaxed text-zinc-600">Tu última visita y la próxima fecha, disponibles al buscar tu patente.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="como-funciona" class="scroll-mt-20 bg-ink py-20 sm:py-28">
+      <div class="mx-auto grid max-w-7xl gap-14 px-5 sm:px-8 lg:grid-cols-[.9fr_1.1fr] lg:items-center lg:px-12">
+        <div><p class="mb-4 text-xs font-bold uppercase tracking-[.25em] text-lime">Fácil de consultar</p><h2 class="font-display text-4xl font-bold leading-tight tracking-tight sm:text-5xl">Toda la información, <span class="text-lime">en un lugar.</span></h2><p class="mt-5 max-w-md leading-relaxed text-white/60">Sin papeles ni cálculos: la ficha de tu vehículo te muestra los datos del servicio más reciente.</p><a href="#consulta" class="mt-8 inline-flex min-h-12 items-center rounded-xl bg-lime px-6 font-bold text-ink hover:bg-[#63ff46]">Consultar mi patente</a></div>
+        <div class="overflow-hidden rounded-3xl border border-white/10 bg-panel"><div class="border-b border-white/10 px-7 py-5 text-xs font-bold uppercase tracking-[.2em] text-white/45">Así funciona</div><ol class="divide-y divide-white/10"><li class="flex gap-5 px-7 py-7"><span class="font-display text-2xl font-bold text-lime">01</span><div><h3 class="font-display text-lg font-semibold">Ingresa tu patente</h3><p class="mt-1 text-sm leading-relaxed text-white/55">Escribe los caracteres en el buscador de esta página.</p></div></li><li class="flex gap-5 px-7 py-7"><span class="font-display text-2xl font-bold text-lime">02</span><div><h3 class="font-display text-lg font-semibold">Revisa el último servicio</h3><p class="mt-1 text-sm leading-relaxed text-white/55">Consulta fecha, kilometraje, aceite y filtros registrados.</p></div></li><li class="flex gap-5 px-7 py-7"><span class="font-display text-2xl font-bold text-lime">03</span><div><h3 class="font-display text-lg font-semibold">Planifica el próximo cambio</h3><p class="mt-1 text-sm leading-relaxed text-white/55">Verás el kilometraje recomendado y la fecha estimada.</p></div></li></ol></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-white/10 bg-[#050705] py-9">
+    <div class="mx-auto flex max-w-7xl flex-col justify-between gap-5 px-5 text-sm text-white/45 sm:flex-row sm:items-center sm:px-8 lg:px-12"><span class="font-display font-bold text-white">LUBRICENTRO <span class="text-lime">PTJ</span></span><span>Demo visual · Los registros de ejemplo se guardan en este navegador.</span><a href="admin.html" class="text-white/65 hover:text-lime">Panel administrativo</a></div>
+  </footer>
+</body>
+</html>
