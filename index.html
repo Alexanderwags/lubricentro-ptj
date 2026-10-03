@@ -9,12 +9,12 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23080a08'/%3E%3Cpath d='M32 9c8 12 17 22 17 34a17 17 0 1 1-34 0C15 31 24 21 32 9Z' fill='%231ff000'/%3E%3Cpath d='M24 44a8 8 0 0 0 8 8' fill='none' stroke='%23080a08' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = { theme: { extend: {
       colors: { ink: '#080a08', panel: '#111511', line: '#293029', lime: '#1ff000', deep: '#0e7300', silver: '#b5b5b5' },
-      fontFamily: { display: ['Space Grotesk', 'sans-serif'], body: ['DM Sans', 'sans-serif'] }
+      fontFamily: { display: ['DM Sans', 'sans-serif'], body: ['DM Sans', 'sans-serif'] }
     } } };
   </script>
   <style>
@@ -24,6 +24,8 @@
     @media (max-width: 767px) { .hero-photo { background-image: linear-gradient(180deg, rgba(8,10,8,.66) 0%, rgba(8,10,8,.93) 50%, #080a08 100%), url('assets/hero-garage.png'); background-position: 63% top; } }
     :focus-visible { outline: 3px solid #1ff000; outline-offset: 3px; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
   <script src="app.js" defer></script>
 </head>
 <body data-page="public" class="bg-ink text-white antialiased">
@@ -49,7 +51,7 @@
     <section class="hero-photo relative flex min-h-[770px] items-center overflow-hidden pt-32 md:min-h-[735px]">
       <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-ink"></div>
       <div class="relative mx-auto w-full max-w-7xl px-5 pb-20 pt-20 sm:px-8 lg:px-12 lg:pb-28">
-        <div class="max-w-2xl">
+        <div class="max-w-3xl">
           <p class="mb-7 inline-flex items-center gap-3 text-xs font-bold uppercase tracking-[.26em] text-lime sm:text-sm"><span class="h-px w-8 bg-lime"></span> Tu auto, al día</p>
           <h1 class="font-display text-5xl font-bold leading-[1.03] tracking-[-.055em] sm:text-6xl lg:text-[5.25rem]">El próximo cambio<br><span class="text-lime">está claro.</span></h1>
           <p class="mt-6 max-w-xl text-lg leading-relaxed text-white/70">Consulta cuándo le toca el próximo servicio a tu vehículo. Solo necesitas su patente.</p>
@@ -58,13 +60,13 @@
             <form id="search-form" novalidate>
               <label for="plate-search" class="mb-3 block font-display text-lg font-semibold">Busca tu vehículo</label>
               <div class="flex flex-col gap-3 sm:flex-row">
-                <input id="plate-search" name="plate" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14" placeholder="Ej. PTJ123" aria-describedby="search-hint search-status" class="min-h-14 w-full flex-1 rounded-xl border border-white/20 bg-white px-4 font-display text-lg font-semibold uppercase tracking-wider text-ink placeholder:font-body placeholder:text-base placeholder:font-normal placeholder:normal-case placeholder:tracking-normal placeholder:text-zinc-500 focus:border-lime focus:outline-none focus:ring-2 focus:ring-lime/50">
+                <input id="plate-search" name="plate" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14" placeholder="ABC123 o AA123AA" aria-describedby="search-hint search-status" class="min-h-14 w-full flex-1 rounded-xl border border-white/20 bg-white px-4 font-display text-lg font-semibold uppercase tracking-wider text-ink placeholder:font-body placeholder:text-base placeholder:font-normal placeholder:normal-case placeholder:tracking-normal placeholder:text-zinc-500 focus:border-lime focus:outline-none focus:ring-2 focus:ring-lime/50">
                 <button id="search-button" type="submit" class="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-lime px-6 font-display font-bold text-ink transition hover:bg-[#63ff46] disabled:cursor-wait disabled:opacity-70">
                   <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.8" cy="10.8" r="7"/><path d="m16 16 5 5"/></svg>
                   <span>Consultar</span>
                 </button>
               </div>
-              <p id="search-hint" class="mt-3 text-sm text-white/55">Para probar la demo, usa la patente <button type="button" id="sample-plate" class="font-bold text-lime underline underline-offset-4">PTJ123</button>.</p>
+              <p id="search-hint" class="mt-3 text-sm text-white/55">Patentes de autos argentinos: ABC123 o AA123AA.</p>
               <p id="search-status" role="status" aria-live="polite" class="mt-3 hidden text-sm"></p>
             </form>
           </div>
@@ -105,7 +107,7 @@
   </main>
 
   <footer class="border-t border-white/10 bg-[#050705] py-9">
-    <div class="mx-auto flex max-w-7xl flex-col justify-between gap-5 px-5 text-sm text-white/45 sm:flex-row sm:items-center sm:px-8 lg:px-12"><span class="font-display font-bold text-white">LUBRICENTRO <span class="text-lime">PTJ</span></span><span>Demo visual · Los registros de ejemplo se guardan en este navegador.</span><a href="admin.html" class="text-white/65 hover:text-lime">Panel administrativo</a></div>
+    <div class="mx-auto flex max-w-7xl flex-col justify-between gap-5 px-5 text-sm text-white/45 sm:flex-row sm:items-center sm:px-8 lg:px-12"><span class="font-display font-bold text-white">LUBRICENTRO <span class="text-lime">PTJ</span></span><span>Consulta los servicios registrados en el taller.</span><a href="admin.html" class="text-white/65 hover:text-lime">Panel administrativo</a></div>
   </footer>
 </body>
 </html>

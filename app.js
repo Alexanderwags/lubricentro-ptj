@@ -1,28 +1,21 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'lubricentro-ptj-demo-v1';
-  const ACCESS_KEY = 'lubricentro-ptj-demo-access';
+  const config = globalThis.PTJ_CONFIG || {};
+  const configured = Boolean(config.supabaseUrl && config.supabasePublishableKey && globalThis.supabase?.createClient);
+  const db = configured ? globalThis.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey) : null;
   const OIL_TYPES = {
     mineral: { label: 'Mineral', interval: 5000 },
     semisintetico: { label: 'Semisintético', interval: 7500 },
     sintetico: { label: 'Sintético', interval: 10000 }
   };
-  const SEED = {
-    vehicles: [
-      { id: 'vehicle-ptj123', plate: 'PTJ123', brand: 'Toyota', model: 'Corolla', year: 2021, customerName: 'Cliente de ejemplo', phone: '' },
-      { id: 'vehicle-abc789', plate: 'ABC789', brand: 'Honda', model: 'Civic', year: 2020, customerName: 'Otro cliente de ejemplo', phone: '' }
-    ],
-    serviceRecords: [
-      { id: 'service-demo-1', vehicleId: 'vehicle-ptj123', date: '2026-06-15', currentKm: 42000, oilType: 'sintetico', filterOil: true, filterAir: true, nextServiceKm: 52000, nextServiceDate: '2026-12-15' },
-      { id: 'service-demo-2', vehicleId: 'vehicle-abc789', date: '2026-05-22', currentKm: 68500, oilType: 'semisintetico', filterOil: true, filterAir: false, nextServiceKm: 76000, nextServiceDate: '2026-11-22' }
-    ]
-  };
-
   const $ = (selector) => document.querySelector(selector);
-  const cloneSeed = () => JSON.parse(JSON.stringify(SEED));
   const normalizePlate = (value) => String(value || '').toUpperCase().replace(/[\s-]/g, '');
-  const formatKm = (value) => `${new Intl.NumberFormat('es-VE').format(value)} km`;
+  // Automóviles argentinos: formato anterior ABC123 y formato Mercosur AA123AA.
+  const validCarPlate = (value) => /^(?:[A-Z]{3}[0-9]{3}|[A-Z]{2}[0-9]{3}[A-Z]{2})$/.test(value);
+  const validCustomerName = (value) => /^[\p{L}\p{M}]+(?:[ '\-][\p{L}\p{M}]+)*$/u.test(value) && value.length >= 2 && value.length <= 80;
+  const validPhone = (value) => value === '' || (/^\+?[0-9][0-9 ()-]*$/.test(value) && (value.match(/[0-9]/g) || []).length >= 8 && (value.match(/[0-9]/g) || []).length <= 15);
+  const formatKm = (value) => `${new Intl.NumberFormat('es-AR').format(value)} km`;
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
   const validIsoDate = (value) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -30,7 +23,7 @@
     return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
   };
   const formatDate = (value) => validIsoDate(value)
-    ? new Intl.DateTimeFormat('es-VE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T12:00:00Z`))
+    ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T12:00:00Z`))
     : '—';
   const todayIso = () => {
     const date = new Date();
@@ -44,36 +37,9 @@
     const lastDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
     return `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(Math.min(day, lastDay)).padStart(2, '0')}`;
   };
-  const id = () => globalThis.crypto?.randomUUID?.() || `demo-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-  function loadData() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw === null) {
-        const seed = cloneSeed();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
-        return seed;
-      }
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed.vehicles) && Array.isArray(parsed.serviceRecords)) return parsed;
-    } catch (error) {
-      console.warn('No se pudieron leer los datos de la demo.', error);
-    }
-    return cloneSeed();
-  }
-
-  let data = loadData();
-
-  function saveData(nextData) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextData));
-      data = nextData;
-      return true;
-    } catch (error) {
-      console.warn('No se pudieron guardar los datos de la demo.', error);
-      return false;
-    }
-  }
+  let data = { vehicles: [], serviceRecords: [] };
+  const mapVehicle = (row) => ({ id: row.id, plate: row.plate, brand: row.brand, model: row.model, year: row.year, customerName: row.customer_name, phone: row.phone });
+  const mapService = (row) => ({ id: row.id, vehicleId: row.vehicle_id, date: row.service_date, currentKm: row.current_km, oilType: row.oil_type, filterOil: row.filter_oil, filterAir: row.filter_air, nextServiceKm: row.next_service_km, nextServiceDate: row.next_service_date });
 
   function latestService(vehicleId) {
     return data.serviceRecords
@@ -87,8 +53,6 @@
     const button = $('#search-button');
     const status = $('#search-status');
     const result = $('#search-result');
-    const sample = $('#sample-plate');
-    let searchTimer;
 
     function showStatus(message, isError = false) {
       status.textContent = message;
@@ -107,14 +71,19 @@
       result.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
     }
 
-    form.addEventListener('submit', (event) => {
+    if (!db) {
+      button.disabled = true;
+      showStatus('La consulta aún no está configurada. Contacta al taller.', true);
+    }
+
+    form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      clearTimeout(searchTimer);
+      if (!db) return;
       result.classList.add('hidden');
       result.innerHTML = '';
       const plate = normalizePlate(input.value);
-      if (!/^[A-Z0-9]{3,10}$/.test(plate)) {
-        showStatus('Ingresa una patente válida de 3 a 10 letras o números.', true);
+      if (!validCarPlate(plate)) {
+        showStatus('Ingresa una patente de auto argentina: ABC123 o AA123AA.', true);
         input.focus();
         return;
       }
@@ -122,19 +91,23 @@
       button.disabled = true;
       button.querySelector('span').textContent = 'Buscando...';
       showStatus('Buscando patente...');
-      searchTimer = setTimeout(() => {
-        data = loadData();
-        const vehicle = data.vehicles.find((item) => normalizePlate(item.plate) === plate);
-        const record = vehicle ? latestService(vehicle.id) : null;
-        button.disabled = false;
-        button.querySelector('span').textContent = 'Consultar';
+      try {
+        const { data: found, error } = await db.rpc('lookup_vehicle', { lookup_plate: plate });
+        if (error) throw error;
+        const vehicle = found?.vehicle;
+        const record = found?.service;
         if (!vehicle) showStatus('No encontramos esa patente. Verifica los caracteres e inténtalo de nuevo.', true);
         else if (!record) showStatus('Encontramos el vehículo, pero todavía no tiene servicios registrados.', true);
         else { showStatus('Patente encontrada. Aquí está el último servicio.'); renderResult(vehicle, record); }
-      }, 350);
+      } catch (error) {
+        console.error('Error al consultar la patente.', error);
+        showStatus('No se pudo completar la consulta. Inténtalo de nuevo.', true);
+      } finally {
+        button.disabled = false;
+        button.querySelector('span').textContent = 'Consultar';
+      }
     });
-
-    sample.addEventListener('click', () => { input.value = 'PTJ123'; input.focus(); });
+    input.addEventListener('input', () => { input.value = normalizePlate(input.value); });
   }
 
   function initAdmin() {
@@ -147,6 +120,49 @@
     const serviceDate = $('#service-date');
     const serviceKm = $('#service-km');
     const serviceOil = $('#service-oil');
+    const loginForm = $('#login-form');
+    const loginStatus = $('#login-status');
+    const loginButton = $('#login-button');
+    const plateInput = $('#vehicle-plate');
+    const nameInput = $('#customer-name');
+    const phoneInput = $('#customer-phone');
+
+    plateInput.addEventListener('input', () => {
+      plateInput.value = normalizePlate(plateInput.value);
+      plateInput.setCustomValidity(plateInput.value && !validCarPlate(plateInput.value) ? 'Usa una patente de auto argentina: ABC123 o AA123AA.' : '');
+    });
+    nameInput.addEventListener('input', () => {
+      nameInput.value = nameInput.value.replace(/[^\p{L}\p{M} '\-]/gu, '');
+      nameInput.setCustomValidity(nameInput.value && !validCustomerName(nameInput.value.trim()) ? 'Escribe un nombre de al menos 2 letras, sin números.' : '');
+    });
+    phoneInput.addEventListener('input', () => {
+      phoneInput.value = phoneInput.value.replace(/[^0-9+ ()-]/g, '');
+      phoneInput.setCustomValidity(validPhone(phoneInput.value.trim()) ? '' : 'Escribe un teléfono de 8 a 15 dígitos, sin letras.');
+    });
+
+    function showLoginStatus(message) {
+      loginStatus.textContent = message;
+      loginStatus.classList.toggle('hidden', !message);
+    }
+
+    async function loadAdminData() {
+      const [vehicles, services] = await Promise.all([
+        db.from('vehicles').select('*').order('plate'),
+        db.from('service_records').select('*').order('service_date', { ascending: false })
+      ]);
+      if (vehicles.error || services.error) throw vehicles.error || services.error;
+      data = { vehicles: vehicles.data.map(mapVehicle), serviceRecords: services.data.map(mapService) };
+    }
+
+    async function openForAdmin(user) {
+      if (!user) return false;
+      const { data: admin, error } = await db.from('admin_users').select('id').eq('id', user.id).maybeSingle();
+      if (error) throw error;
+      if (!admin) return false;
+      await loadAdminData();
+      showApp(true);
+      return true;
+    }
 
     function showApp(open) {
       loginScreen.classList.toggle('hidden', open);
@@ -199,35 +215,72 @@
 
     function renderAdmin() { renderStats(); renderVehicleOptions(); renderHistory(); updatePreview(); }
 
-    $('#demo-login').addEventListener('click', () => {
-      try { sessionStorage.setItem(ACCESS_KEY, '1'); } catch (error) { console.warn('La sesión demo no pudo persistir.', error); }
-      showApp(true);
+    loginForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!db || !loginForm.reportValidity()) return;
+      loginButton.disabled = true;
+      loginButton.textContent = 'Ingresando...';
+      showLoginStatus('');
+      try {
+        const { data: signedIn, error } = await db.auth.signInWithPassword({ email: $('#login-email').value.trim(), password: $('#login-password').value });
+        if (error) throw error;
+        if (!await openForAdmin(signedIn.user)) {
+          await db.auth.signOut();
+          showLoginStatus('Esta cuenta no tiene acceso al panel administrativo.');
+        } else {
+          $('#login-password').value = '';
+        }
+      } catch (error) {
+        console.error('Error al iniciar sesión.', error);
+        showLoginStatus('No se pudo iniciar sesión. Revisa los datos o inténtalo de nuevo.');
+      } finally {
+        loginButton.disabled = false;
+        loginButton.textContent = 'Iniciar sesión';
+      }
     });
-    $('#demo-logout').addEventListener('click', () => {
-      try { sessionStorage.removeItem(ACCESS_KEY); } catch (error) { console.warn('La sesión demo no pudo cerrarse en el almacenamiento.', error); }
+    $('#admin-logout').addEventListener('click', async () => {
+      const { error } = await db.auth.signOut();
+      if (error) { showNotice('No se pudo cerrar la sesión. Inténtalo de nuevo.', 'error'); return; }
+      data = { vehicles: [], serviceRecords: [] };
       showApp(false);
-      $('#demo-login').focus();
+      $('#login-email').focus();
     });
 
-    vehicleForm.addEventListener('submit', (event) => {
+    vehicleForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (!vehicleForm.reportValidity()) return;
       const form = new FormData(vehicleForm);
       const plate = normalizePlate(form.get('plate'));
       const year = Number(form.get('year'));
-      if (!/^[A-Z0-9]{3,10}$/.test(plate)) { showNotice('La patente debe tener entre 3 y 10 letras o números.', 'error'); $('#vehicle-plate').focus(); return; }
+      if (!validCarPlate(plate)) { showNotice('La patente debe tener formato argentino ABC123 o AA123AA.', 'error'); plateInput.focus(); return; }
       if (data.vehicles.some((vehicle) => normalizePlate(vehicle.plate) === plate)) { showNotice('Esa patente ya está registrada.', 'error'); $('#vehicle-plate').focus(); return; }
       if (!Number.isInteger(year) || year < 1900 || year > new Date().getFullYear() + 1) { showNotice('Revisa el año del vehículo.', 'error'); $('#vehicle-year').focus(); return; }
-      const vehicle = { id: id(), plate, brand: String(form.get('brand')).trim(), model: String(form.get('model')).trim(), year, customerName: String(form.get('customer')).trim(), phone: String(form.get('phone')).trim() };
-      if (!vehicle.brand || !vehicle.model || !vehicle.customerName) { showNotice('Completa la marca, el modelo y el nombre del cliente.', 'error'); return; }
-      if (!saveData({ ...data, vehicles: [...data.vehicles, vehicle] })) { showNotice('No se pudo guardar. Revisa que el almacenamiento del navegador esté disponible.', 'error'); return; }
+      const vehicle = { plate, brand: String(form.get('brand')).trim(), model: String(form.get('model')).trim(), year, customer_name: String(form.get('customer')).trim().normalize('NFC'), phone: String(form.get('phone')).trim() };
+      if (!vehicle.brand || !vehicle.model || !validCustomerName(vehicle.customer_name)) { showNotice('Revisa la marca, el modelo y el nombre del cliente. El nombre solo puede contener letras.', 'error'); return; }
+      if (!validPhone(vehicle.phone)) { showNotice('El teléfono debe tener entre 8 y 15 dígitos y no contener letras.', 'error'); phoneInput.focus(); return; }
+      const submit = vehicleForm.querySelector('[type="submit"]');
+      submit.disabled = true;
+      let saved;
+      try {
+        const response = await db.from('vehicles').insert(vehicle).select().single();
+        if (response.error) throw response.error;
+        saved = response.data;
+      } catch (error) {
+        console.error('Error al guardar el vehículo.', error);
+        showNotice(error.code === '23505' ? 'Esa patente ya está registrada.' : 'No se pudo guardar el vehículo. Inténtalo de nuevo.', 'error');
+        return;
+      } finally {
+        submit.disabled = false;
+      }
+      data.vehicles.push(mapVehicle(saved));
       vehicleForm.reset();
+      [plateInput, nameInput, phoneInput].forEach((input) => input.setCustomValidity(''));
       renderAdmin();
-      vehicleSelect.value = vehicle.id;
+      vehicleSelect.value = saved.id;
       showNotice(`Vehículo ${plate} guardado. Ya puedes registrar su servicio.`);
     });
 
-    serviceForm.addEventListener('submit', (event) => {
+    serviceForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (!serviceForm.reportValidity()) return;
       const vehicleId = vehicleSelect.value;
@@ -238,12 +291,26 @@
       if (!vehicle || !validIsoDate(date) || !Number.isSafeInteger(km) || km < 0 || !OIL_TYPES[oilType]) { showNotice('Revisa el vehículo, la fecha, el kilometraje y el tipo de aceite.', 'error'); return; }
       const previous = latestService(vehicleId);
       if (previous && (date < previous.date || km < previous.currentKm)) { showNotice(`El nuevo servicio debe tener una fecha y un kilometraje iguales o posteriores al último registro de ${vehicle.plate}.`, 'error'); return; }
-      const record = { id: id(), vehicleId, date, currentKm: km, oilType, filterOil: $('#filter-oil').checked, filterAir: $('#filter-air').checked, nextServiceKm: km + OIL_TYPES[oilType].interval, nextServiceDate: addSixMonths(date) };
-      if (!saveData({ ...data, serviceRecords: [...data.serviceRecords, record] })) { showNotice('No se pudo guardar. Revisa que el almacenamiento del navegador esté disponible.', 'error'); return; }
+      const record = { vehicle_id: vehicleId, service_date: date, current_km: km, oil_type: oilType, filter_oil: $('#filter-oil').checked, filter_air: $('#filter-air').checked, next_service_km: km + OIL_TYPES[oilType].interval, next_service_date: addSixMonths(date) };
+      const submit = serviceForm.querySelector('[type="submit"]');
+      submit.disabled = true;
+      let saved;
+      try {
+        const response = await db.from('service_records').insert(record).select().single();
+        if (response.error) throw response.error;
+        saved = response.data;
+      } catch (error) {
+        console.error('Error al guardar el servicio.', error);
+        showNotice('No se pudo guardar el servicio. Inténtalo de nuevo.', 'error');
+        return;
+      } finally {
+        submit.disabled = false;
+      }
+      data.serviceRecords.push(mapService(saved));
       serviceForm.reset();
       serviceDate.value = todayIso();
       renderAdmin();
-      showNotice(`Servicio de ${vehicle.plate} guardado. Próximo cambio: ${formatKm(record.nextServiceKm)} o ${formatDate(record.nextServiceDate)}.`);
+      showNotice(`Servicio de ${vehicle.plate} guardado. Próximo cambio: ${formatKm(record.next_service_km)} o ${formatDate(record.next_service_date)}.`);
     });
 
     [serviceDate, serviceKm, serviceOil].forEach((element) => element.addEventListener('input', updatePreview));
@@ -252,9 +319,25 @@
       serviceKm.placeholder = previous ? `Último: ${formatKm(previous.currentKm)}` : 'Ej. 42000';
     });
     serviceDate.value = todayIso();
-    let hasSession = false;
-    try { hasSession = sessionStorage.getItem(ACCESS_KEY) === '1'; } catch (error) { console.warn('La sesión demo no está disponible.', error); }
-    showApp(hasSession);
+    $('#vehicle-year').max = String(new Date().getFullYear() + 1);
+    showApp(false);
+    if (!db) {
+      loginButton.disabled = true;
+      showLoginStatus('El panel aún no está configurado. Falta conectar Supabase.');
+      return;
+    }
+    db.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') showApp(false);
+    });
+    db.auth.getUser().then(async ({ data: session, error }) => {
+      if (error || !session.user) return;
+      try {
+        if (!await openForAdmin(session.user)) await db.auth.signOut();
+      } catch (loadError) {
+        console.error('Error al cargar el panel.', loadError);
+        showLoginStatus('No se pudo cargar el panel. Inténtalo de nuevo.');
+      }
+    });
   }
 
   if (document.body.dataset.page === 'public') initPublic();
